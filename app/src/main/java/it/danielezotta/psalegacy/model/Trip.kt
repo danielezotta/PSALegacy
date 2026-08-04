@@ -1,0 +1,32 @@
+package it.danielezotta.psalegacy.model
+
+data class Trip(
+    val vin: String,
+    val tripNumber: Long,
+    val startEpochMs: Long,
+    val endEpochMs: Long,
+    val startMileageKm: Float,
+    val endMileageKm: Float,
+    val distanceKm: Float,
+    val travelTimeMs: Long,
+    val fuelConsumptionL: Float,
+    val fuelLevel: Int,
+    val fuelAutonomyKm: Int,
+    val otherEnergyType: Int,
+    val otherEnergyLevel: Int,
+    val otherEnergyAutonomyKm: Int,
+    val startLat: Float,
+    val startLon: Float,
+    val startAltitude: Int,
+    val endLat: Float,
+    val endLon: Float,
+    val endAltitude: Int,
+    val destinationLat: Float,
+    val destinationLon: Float,
+    val distanceToNextMaintenance: Int,
+    val daysUntilNextMaintenance: Int,
+    val maintenancePassed: Boolean,
+    val endAddress: String?,
+    val destinationAddress: String?,
+    val alertCodes: List<Int>
+)
