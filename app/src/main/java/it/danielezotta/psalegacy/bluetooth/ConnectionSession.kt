@@ -56,10 +56,27 @@ class ConnectionSession(
                     continue
                 }
                 logger(LogTag.RX, "clear (${clearBytes.size} B): ${clearBytes.toHexString()}")
+                // The clear header is [sa][len][ver][msgid][seq]: parse the fields
+                // directly so messages the codec does not know yet (unknown ids from
+                // newer/other head-unit firmwares) still get logged with their
+                // numeric id instead of being dropped silently.
+                val headerId: Short
+                val headerSeq: Short
+                if (clearBytes.size >= ProtocolConstants.CLEAR_HEADER_SIZE - 1) {
+                    headerId = ((clearBytes[6].toInt() and 0xFF) shl 8 or (clearBytes[7].toInt() and 0xFF)).toShort()
+                    headerSeq = ((clearBytes[8].toInt() and 0xFF) shl 8 or (clearBytes[9].toInt() and 0xFF)).toShort()
+                } else {
+                    headerId = -1
+                    headerSeq = -1
+                }
                 val clear = try {
                     MessageCodec.decode(clearBytes)
                 } catch (e: ProtocolException) {
-                    logger(LogTag.ERR, "Bad message ignored: ${e.message}")
+                    logger(
+                        LogTag.ERR,
+                        "Bad message ignored: ${e.message} " +
+                            "(id=${ProtocolConstants.messageName(headerId)} raw=$headerId seq=$headerSeq)"
+                    )
                     continue
                 }
                 logger(LogTag.RX, "msg ${ProtocolConstants.messageName(clear.messageId)} seq=${clear.sequence}")

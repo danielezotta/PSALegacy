@@ -28,5 +28,7 @@ data class Trip(
     val maintenancePassed: Boolean,
     val endAddress: String?,
     val destinationAddress: String?,
-    val alertCodes: List<Int>
+    val alertCodes: List<Int>,
+    val startPqi: Int = -1,
+    val endPqi: Int = -1
 )

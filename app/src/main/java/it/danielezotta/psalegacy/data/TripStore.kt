@@ -96,6 +96,8 @@ object TripStore {
         put("endAddress", t.endAddress)
         put("destinationAddress", t.destinationAddress)
         put("alertCodes", JSONArray(t.alertCodes))
+        put("startPqi", t.startPqi)
+        put("endPqi", t.endPqi)
     }
 
     fun fromJsonArray(array: JSONArray): List<Trip> {
@@ -140,7 +142,9 @@ object TripStore {
             maintenancePassed = o.getBoolean("maintenancePassed"),
             endAddress = if (o.isNull("endAddress")) null else o.getString("endAddress"),
             destinationAddress = if (o.isNull("destinationAddress")) null else o.getString("destinationAddress"),
-            alertCodes = codes
+            alertCodes = codes,
+            startPqi = o.optInt("startPqi", -1),
+            endPqi = o.optInt("endPqi", -1)
         )
     }
 }

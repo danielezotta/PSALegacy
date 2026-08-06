@@ -99,7 +99,9 @@ object TripDecoder {
             maintenancePassed = maintPassed.toInt() == 1,
             endAddress = endAddr,
             destinationAddress = destAddr,
-            alertCodes = AlertDecoder.decodeAlertCodes(misc)
+            alertCodes = AlertDecoder.decodeAlertCodes(misc),
+            startPqi = startPqi,
+            endPqi = endPqi
         )
     }
 

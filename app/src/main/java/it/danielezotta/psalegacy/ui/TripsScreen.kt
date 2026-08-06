@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -141,6 +142,76 @@ private fun TripRow(trip: Trip, now: Long) {
                     )
                 }
             }
+            HorizontalDivider(Modifier.padding(vertical = 10.dp))
+            TripDetails(trip)
+        }
+    }
+}
+
+@Composable
+private fun TripDetails(trip: Trip) {
+    val rows = buildList {
+        add("End" to "${Format.dateTime(trip.endEpochMs)} · ${Format.km(trip.endMileageKm)}")
+        Format.coord(trip.startLat, trip.startLon)?.let {
+            add("Start GPS" to it + Format.altAndPqi(trip.startAltitude, trip.startPqi)?.let { a -> " · $a" }.orEmpty())
+        }
+        Format.coord(trip.endLat, trip.endLon)?.let {
+            add("End GPS" to it + Format.altAndPqi(trip.endAltitude, trip.endPqi)?.let { a -> " · $a" }.orEmpty())
+        }
+        Format.altAndPqi(trip.startAltitude, trip.startPqi)?.let {
+            if (Format.coord(trip.startLat, trip.startLon) == null) add("Start alt/PQI" to it)
+        }
+        Format.altAndPqi(trip.endAltitude, trip.endPqi)?.let {
+            if (Format.coord(trip.endLat, trip.endLon) == null) add("End alt/PQI" to it)
+        }
+        Format.coord(trip.destinationLat, trip.destinationLon)?.let { add("Destination GPS" to it) }
+        trip.endAddress?.let { add("End address" to it) }
+        trip.destinationAddress?.let { add("Destination address" to it) }
+        if (trip.fuelLevel >= 0) add("Fuel level" to "${trip.fuelLevel}%")
+        if (trip.fuelAutonomyKm >= 0) add("Range" to Format.kmInt(trip.fuelAutonomyKm.toFloat()))
+        if (trip.otherEnergyType != 0 || trip.otherEnergyLevel != 65535 || trip.otherEnergyAutonomyKm >= 0) {
+            val parts = buildList {
+                if (trip.otherEnergyType != 0) add("type ${trip.otherEnergyType}")
+                if (trip.otherEnergyLevel != 65535) add("level ${trip.otherEnergyLevel}%")
+                if (trip.otherEnergyAutonomyKm >= 0) add("range ${Format.kmInt(trip.otherEnergyAutonomyKm.toFloat())}")
+            }
+            add("EV" to parts.joinToString(" · "))
+        }
+        val maintParts = if (trip.maintenancePassed) {
+            listOf("service due")
+        } else {
+            buildList {
+                if (trip.distanceToNextMaintenance >= 0) add("${Format.km(trip.distanceToNextMaintenance.toFloat())} left")
+                if (trip.daysUntilNextMaintenance >= 0) add("${trip.daysUntilNextMaintenance} days left")
+            }
+        }
+        if (maintParts.isNotEmpty()) add("Maintenance" to maintParts.joinToString(" · "))
+    }
+    Column {
+        for ((label, value) in rows) {
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    value,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.End
+                )
+            }
+        }
+        if (rows.isEmpty()) {
+            Text(
+                "No additional data for this trip",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

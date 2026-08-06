@@ -16,6 +16,118 @@ object AlertCatalog {
         val criticity: String? = null
     )
 
+    /**
+     * French titles from the head unit itself: extracted from the SMEG+ 5.43.A.R2
+     * firmware (db_alerts.sqlite, jda_alerts table — the 256-bit trip alert mask).
+     * Covers bits the original app's catalog lacks (doors, roof, lights, wheels...).
+     */
+    private val HU_FR: Map<Int, String> = mapOf(
+        0 to "Défaut pression huile moteur : arretez le véhicule",
+        1 to "Water temperature alarm",
+        3 to "Défaut système de freinage : arrêtez le véhicule",
+        5 to "Défaut direction assistée : arrêtez le véhicule",
+        6 to "Ajustez niveau liquide refroidissement",
+        8 to "Ajustez niveau huile moteur",
+        10 to "Porte avant gauche ouverte",
+        11 to "Porte avant droite ouverte",
+        12 to "Porte arrière gauche ouverte",
+        13 to "Porte arrière droite ouverte",
+        15 to "Coffre ouvert",
+        16 to "Lunette arrière ouverte",
+        17 to "Défaut système ESP/ASR : arrêtez le véhicule",
+        18 to "Défaut charge batterie : arrêtez le véhicule",
+        20 to "Présence d'eau dans le filtre à gazoil : faites réparer le véhicule",
+        21 to "Faites changer les plaquettes de frein",
+        22 to "Niveau carburant faible",
+        23 to "Défaut Airbag(s) ou ceinture(s) à prétension",
+        25 to "Défaut moteur : Faites réparer le véhicule",
+        26 to "Défaut système de freinage ABS : Faites réparer le véhicule",
+        27 to "Risque de colmatage filtre à particules : Consultez la notice",
+        29 to "Niveau additif FAP trop faible : Faites réparer le véhicule",
+        31 to "Défaut suspension : Faites réparer le véhicule",
+        32 to "Préchauffage : préventilation désactivé : Niveau de batterie faible",
+        33 to "Préchauffage : préventilation désactivé : Niveau de carburant faible",
+        34 to "Contrôlez feu STOP central",
+        35 to "Défaut mécanisme toit escamotable",
+        36 to "Défaut antivol de direction : Faites réparer le véhicule",
+        37 to "Défaut antidémarrage electronique",
+        39 to "Manoeuvre de toit impossible : Température système trop élevée",
+        40 to "Manoeuvre du toit impossible : Démarrer le moteur",
+        41 to "Manoeuvre du toit impossible : Serrez le frein à main",
+        42 to "Défaut système hybride : Arrêtez le véhicule, consultez notice",
+        43 to "Défaut réglage automatique des projecteurs",
+        44 to "Défaut système hybride : Faites réparez le véhicule",
+        45 to "Défaut système hybride : Vitesse limitée, faites réparer le véhicule",
+        46 to "Ajustez niveau liquide lave glace",
+        47 to "Remplacez la pile de la telecommande",
+        49 to "Préchauffage : préventilation désactivé : Réglez l'horloge",
+        50 to "Défaut connexion remorque : Faites réparer le véhicule",
+        52 to "Défaut surveillance de sous gonflage",
+        53 to "Radar de suivi sale : nettoyez-le",
+        57 to "Mode Electrique indisponible : régénération FAP en cours",
+        59 to "Crevaison roue avant gauche : Remplacez ou réparez la roue",
+        60 to "Crevaison roue avant droite : Remplacez ou réparez la roue",
+        61 to "Crevaison roue arrière droite : Remplacez ou réparez la roue",
+        62 to "Crevaison roue arrière gauche : Remplacez ou réparez la roue",
+        63 to "Controlez les feux de position",
+        64 to "Controlez les feux de position",
+        65 to "Controlez les feux de position",
+        66 to "Controlez les feux de position",
+        71 to "Controlez feu stop ARD",
+        72 to "Controlez feu stop ARG",
+        73 to "Contrôlez les feux antibrouillard avant droit",
+        74 to "Contrôlez les feux antibrouillard avant gauche",
+        75 to "Contrôlez les feux antibrouillard arriere gauche",
+        76 to "Contrôlez les feux antibrouillard arriere droit",
+        77 to "Controlez les feux indicateurs de direction",
+        78 to "Controlez les feux indicateurs de direction",
+        79 to "Controlez les feux indicateurs de direction",
+        80 to "Controlez les feux indicateurs de direction",
+        81 to "Controlez les feux de recul",
+        82 to "Controlez les feux de recul",
+        91 to "Défaut système aide au stationnement",
+        94 to "Roue avant gauche sous gonflée : Ajustez la pression des pneus",
+        95 to "Roue avant droite sous gonflée : Ajustez la pression des pneus",
+        96 to "Roue arrière droite sous gonflée : Ajustez la pression des pneus",
+        97 to "Roue arrière gauche sous gonflée : Ajustez la pression des pneus",
+        98 to "Eteignez les feux",
+        100 to "Défaut antipollution : Démarrage interdit dans xxxx km",
+        101 to "Défaut antipollution : Démarrage interdit",
+        102 to "Défaut antipollution",
+        106 to "Placez boite automatique en position \"P\"",
+        107 to "Risque de verglas",
+        108 to "Porte avant droite ouverte",
+        109 to "Porte avant gauche ouverte",
+        110 to "Porte arrière droite ouverte",
+        111 to "Porte arrière gauche ouverte",
+        112 to "Coffre ouvert",
+        113 to "Défaut système de détection du risque de collision",
+        114 to "Lunette arrière ouverte",
+        123 to "Défaut frein de parking : Faites réparez le véhicule",
+        124 to "Aileron mobile défaillant, Vitesse limitée, Consultez la notice",
+        125 to "Défaut système de freinage automatique",
+        126 to "Défaut projecteurs directionnels",
+        133 to "Défaut boite de vitesse : Faites réparez le vehicule",
+        141 to "Défaut moteur : Faites réparer le véhicule",
+        142 to "Défaut suspension : Limitez votre vitesse",
+        148 to "Défaut capteur : Pression pneu avant gauche non surveillée",
+        149 to "Défaut capteur : Pression pneu avant droit non surveillée",
+        150 to "Défaut capteur : Pression pneu arrière droit non surveillée",
+        151 to "Défaut capteur : Pression pneu arrière gauche non surveillée",
+        153 to "Défaut direction assistée : Faites réparez le véhicule",
+        156 to "Défaut mesure du temps inter-véhicule",
+        157 to "Défaut moteur : arrêtez le véhicule",
+        159 to "Défaut surveillance de sous gonflage",
+        160 to "Roue arrière droite sous gonflée : ajustez pression pneus, puis reinit",
+        161 to "Roue arrière gauche sous gonflée : ajustez pression pneus, puis reinit",
+        162 to "Roue avant droite sous gonflée : ajustez pression pneus, puis reinit",
+        163 to "Roue arrière gauche sous gonflée : ajustez pression pneus, puis reinit",
+        164 to "Freinage automatique désactivé",
+        165 to "Remplir additif antipollution : Demarrage interdit dans xxxx km",
+        166 to "Remplir additif antipollution : Demarrage interdit dans xxxx km",
+        167 to "Remplir additif antipollution : Demarrage interdit"
+    )
+
     private val CATALOG: Map<Int, AlertInfo> = mapOf(
         0 to AlertInfo("Pressione olio motore anomala", "Abnormal engine oil pressure", "HIGH"),
         1 to AlertInfo("Temperatura motore troppo elevata", "Engine temperature too high", "HIGH"),
@@ -100,8 +212,12 @@ object AlertCatalog {
     fun lookup(code: Int): AlertInfo? = CATALOG[code]
 
     fun title(code: Int, language: String? = Locale.getDefault().language): String? {
-        val info = lookup(code) ?: return null
-        return if (language == "it") info.titleIt else info.titleEn
+        val info = lookup(code)
+        if (language == "fr") return HU_FR[code] ?: info?.titleEn
+        return when {
+            info != null -> if (language == "it") info.titleIt else info.titleEn
+            else -> HU_FR[code]
+        }
     }
 
     fun criticity(code: Int): String? = lookup(code)?.criticity

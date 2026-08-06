@@ -49,6 +49,24 @@ object Format {
         else SimpleDateFormat("dd MMM · HH:mm", Locale.getDefault()).format(date)
     }
 
+    fun dateTime(epochMs: Long): String =
+        SimpleDateFormat("dd MMM · HH:mm", Locale.getDefault()).format(Date(epochMs))
+
+    fun time(epochMs: Long): String =
+        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(epochMs))
+
+    fun coord(lat: Float, lon: Float): String? =
+        if (lat == Float.MAX_VALUE || lon == Float.MAX_VALUE) null
+        else "%.6f, %.6f".format(Locale.US, lat, lon)
+
+    fun altAndPqi(altitude: Int, pqi: Int): String? {
+        val parts = buildList {
+            if (altitude != -1) add("alt ${altitude}m")
+            if (pqi in 0..100) add("PQI $pqi")
+        }
+        return parts.joinToString(" · ").ifEmpty { null }
+    }
+
     private fun groupDigits(plain: String): String {
         val parts = plain.split('.')
         val grouped = parts[0].reversed().chunked(3).joinToString(" ").reversed()

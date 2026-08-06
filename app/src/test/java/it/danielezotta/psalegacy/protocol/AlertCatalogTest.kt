@@ -18,10 +18,18 @@ class AlertCatalogTest {
 
     @Test
     fun `unknown codes return null`() {
-        assertNull(AlertCatalog.title(109, "it"))
-        assertNull(AlertCatalog.title(109, "en"))
         assertNull(AlertCatalog.title(255, "it"))
         assertNull(AlertCatalog.title(-1, "it"))
+        assertNull(AlertCatalog.title(200, "en"))
+    }
+
+    @Test
+    fun `head-unit catalog fills codes missing from the app catalog`() {
+        assertEquals("Porte avant gauche ouverte", AlertCatalog.title(109, "en"))
+        assertEquals("Porte avant gauche ouverte", AlertCatalog.title(109, "fr"))
+        assertEquals("Coffre ouvert", AlertCatalog.title(15, "en"))
+        assertEquals("Défaut capteur : Pression pneu avant gauche non surveillée", AlertCatalog.title(148, "fr"))
+        assertEquals("Porte avant gauche ouverte", AlertCatalog.title(109, "it"))
     }
 
     @Test
