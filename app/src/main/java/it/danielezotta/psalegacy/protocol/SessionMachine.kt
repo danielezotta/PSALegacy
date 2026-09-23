@@ -16,6 +16,12 @@ class SessionMachine(
     @Volatile
     private var sequence: Short = 0
 
+    @Volatile
+    private var expectedTrips = 0
+
+    @Volatile
+    private var receivedTrips = 0
+
     fun start() {
         if (state == State.LISTENING) {
             // Keys must exist BEFORE the first frame is decrypted: the car's
@@ -60,6 +66,7 @@ class SessionMachine(
         if (state != State.LISTENING) {
             state = State.LISTENING
             sequence = 0
+            reportPendingTrips()
             events.onDisconnected()
         }
     }
@@ -91,6 +98,8 @@ class SessionMachine(
         state = State.AUTHENTICATED
         val tripCount = ack.tripCount.toInt() and 0xFFFF
         val active = ack.activationResult.toInt() and 1 == 1
+        expectedTrips = tripCount
+        receivedTrips = 0
         events.onActivationAck(tripCount, active)
         return null
     }
@@ -99,6 +108,8 @@ class SessionMachine(
         val raw = (msg.payload as Payload.TripDataPayload).raw
         return try {
             val trip: Trip = TripDecoder.decode(raw, vin)
+            receivedTrips++
+            if (expectedTrips > 0 && receivedTrips == expectedTrips) reportPendingTrips()
             events.onTrip(trip)
             ClearMessage(
                 ProtocolConstants.MSG_TRIP_DATA_ACK,
@@ -106,12 +117,24 @@ class SessionMachine(
                 Payload.TripDataAckPayload(TripProcessingResult.SUCCESS)
             )
         } catch (e: Exception) {
+            receivedTrips++
+            if (expectedTrips > 0 && receivedTrips == expectedTrips) reportPendingTrips()
             events.onError("Trip decode failed: ${e.message}")
             ClearMessage(
                 ProtocolConstants.MSG_TRIP_DATA_ACK,
                 msg.sequence,
                 Payload.TripDataAckPayload(TripProcessingResult.DATA_VALIDATION_FAILURE)
             )
+        }
+    }
+
+    private fun reportPendingTrips() {
+        if (expectedTrips > 0) {
+            val received = receivedTrips
+            val expected = expectedTrips
+            expectedTrips = 0
+            receivedTrips = 0
+            events.onTripsSynced(received, expected)
         }
     }
 }

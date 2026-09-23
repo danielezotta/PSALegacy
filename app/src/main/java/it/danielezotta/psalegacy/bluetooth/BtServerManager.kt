@@ -11,6 +11,10 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * RFCOMM server. Opens one independent accept socket per UUID so a failure on
  * one UUID never tears down the others (unlike MyPeugeot 1.33.x).
+ *
+ * Every accept loop is resilient: a transient accept/listen failure (typical
+ * when audio devices connect or the Bluetooth stack restarts) re-opens the
+ * listener instead of killing the accept thread.
  */
 class BtServerManager(
     private val adapter: BluetoothAdapter,
@@ -41,41 +45,38 @@ class BtServerManager(
     }
 
     private inner class AcceptThread(private val uuid: UUID) : Thread("accept-$uuid") {
-        @Volatile
-        private var serverSocket: BluetoothServerSocket? = null
+        private var loop: AcceptRetryLoop<BluetoothServerSocket, BluetoothSocket>? = null
 
         override fun run() {
-            try {
-                serverSocket = adapter.listenUsingRfcommWithServiceRecord(
-                    "PsaLegacy", uuid
-                )
-                logger(LogTag.INFO, "RFCOMM listening on $uuid")
-            } catch (e: Exception) {
-                logger(LogTag.ERR, "Failed to listen on $uuid: ${e.message}")
-                return
-            }
-            while (isRunning) {
-                try {
-                    val socket = serverSocket?.accept()
-                    if (socket == null) {
-                        if (isRunning) logger(LogTag.ERR, "accept() returned null on $uuid")
-                        return
+            val l = AcceptRetryLoop(
+                open = {
+                    try {
+                        adapter.listenUsingRfcommWithServiceRecord("PsaLegacy", uuid)
+                    } catch (e: Exception) {
+                        logger(LogTag.ERR, "Failed to listen on $uuid: ${e.message}")
+                        null
                     }
+                },
+                accept = { server -> server.accept() },
+                close = { server -> try { server.close() } catch (_: IOException) {} },
+                onAccepted = { socket ->
                     logger(LogTag.INFO, "Incoming connection on $uuid")
-                    if (isRunning) onSocket(socket)
-                } catch (e: IOException) {
-                    if (isRunning) logger(LogTag.ERR, "Accept error on $uuid: ${e.message}")
-                    return
-                }
-            }
+                    onSocket(socket)
+                },
+                isRunning = { this@BtServerManager.isRunning },
+                onError = { message -> logger(LogTag.ERR, "Accept error on $uuid: $message") },
+                retryDelayMs = RETRY_DELAY_MS,
+            )
+            loop = l
+            l.run()
         }
 
         fun close() {
-            try {
-                serverSocket?.close()
-            } catch (_: IOException) {
-            }
-            serverSocket = null
+            loop?.closeActive()
         }
+    }
+
+    private companion object {
+        const val RETRY_DELAY_MS = 1500L
     }
 }

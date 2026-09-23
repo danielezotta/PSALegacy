@@ -32,7 +32,19 @@ object ProtocolConstants {
     const val CHALLENGE_SIZE = 32
     const val MISC_INDICATORS_SIZE = 32
 
-    const val ACTIVATION_REQUEST_DEFAULT: Short = 7
+    const val ACTIVATION_FLAG_ACTIVATE = 1
+    const val ACTIVATION_FLAG_CLEAR_TRIPS = 2
+    const val ACTIVATION_FLAG_POSITION_RECORDING = 4
+
+    /**
+     * The original MyPeugeot app sent 7 (all bits set, keepExistingData=false).
+     * On the SMEG the CLEAR_TRIPS bit makes the head unit discard trips stored
+     * while the phone was not connected: they never get pushed on a later
+     * connection. Send 5 (activate + position recording) so stored trips
+     * survive and are delivered at the next activation.
+     */
+    const val ACTIVATION_REQUEST_DEFAULT: Short =
+        (ACTIVATION_FLAG_ACTIVATE or ACTIVATION_FLAG_POSITION_RECORDING).toShort()
 
     const val PENDING_ACTIVATION_DELAY_MS = 5000L
     const val ACTIVATION_ACK_TIMEOUT_MS = 2000L

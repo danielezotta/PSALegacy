@@ -26,6 +26,7 @@ class SessionFlowTest {
         override fun onTrip(trip: Trip) {}
         override fun onError(message: String) {}
         override fun onDisconnected() {}
+        override fun onTripsSynced(received: Int, expected: Int) {}
     }
 
     @Test

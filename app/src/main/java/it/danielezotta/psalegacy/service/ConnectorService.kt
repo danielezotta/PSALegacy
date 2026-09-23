@@ -16,6 +16,8 @@ import it.danielezotta.psalegacy.MainActivity
 import it.danielezotta.psalegacy.R
 import it.danielezotta.psalegacy.bluetooth.BtServerManager
 import it.danielezotta.psalegacy.bluetooth.ConnectionSession
+import it.danielezotta.psalegacy.data.LogStore
+import it.danielezotta.psalegacy.data.SettingsStore
 import it.danielezotta.psalegacy.data.TripStore
 import it.danielezotta.psalegacy.model.Trip
 import it.danielezotta.psalegacy.protocol.ProtocolConstants
@@ -51,6 +53,10 @@ class ConnectorService : Service() {
 
     private var activeVin: String = ""
 
+    /** Remote address of [activeSession]; saved as the car once it authenticates. */
+    @Volatile
+    private var activeAddress: String? = null
+
     private val events = object : SessionEvents {
         override fun onConnected() {
             AppState.connState.value = AppState.ConnState.Connected
@@ -62,6 +68,7 @@ class ConnectorService : Service() {
                 AppState.LogTag.STATE,
                 "Authenticated (btelType=$btelType serviceStatus=$serviceStatus)"
             )
+            rememberCar(activeAddress)
             val session = activeSession
             if (session != null) {
                 Thread {
@@ -106,12 +113,30 @@ class ConnectorService : Service() {
             AppState.connState.value = AppState.ConnState.Listening
             AppState.appendLog(AppState.LogTag.STATE, "Car disconnected; listening again")
         }
+
+        override fun onTripsSynced(received: Int, expected: Int) {
+            if (received >= expected) {
+                AppState.appendLog(
+                    AppState.LogTag.STATE,
+                    "All $expected stored trips received"
+                )
+            } else {
+                AppState.appendLog(
+                    AppState.LogTag.STATE,
+                    "Received $received/$expected stored trips; the rest will be pushed " +
+                        "on the next connection"
+                )
+            }
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
         createChannel()
         TripStore.init(applicationContext)
+        LogStore.init(applicationContext)
+        // Started by AutoStartReceiver or a sticky restart: the UI never loaded settings.
+        if (AppState.vin.value.isEmpty()) SettingsStore.loadIntoAppState(applicationContext)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -124,7 +149,8 @@ class ConnectorService : Service() {
             }
             else -> {
                 startForeground(NOTIFICATION_ID, buildNotification("Listening..."))
-                startListening()
+                // Auto-start may fire while already listening; restarting would drop the car.
+                if (btServer?.isRunning != true) startListening()
                 return START_STICKY
             }
         }
@@ -174,11 +200,19 @@ class ConnectorService : Service() {
             "unknown device (no permission: ${e.message})"
         }
         AppState.appendLog(AppState.LogTag.INFO, "Accepted connection from $remote")
+        activeAddress = try { socket.remoteDevice?.address } catch (_: SecurityException) { null }
         val machine = SessionMachine(activeVin, events)
         machine.start()
         val session = ConnectionSession(socket, machine) { tag, msg -> AppState.appendLog(tag, msg) }
         activeSession = session
         Thread { session.run() }.also { it.start() }
+    }
+
+    private fun rememberCar(address: String?) {
+        if (address == null || address == AppState.carAddress.value) return
+        AppState.carAddress.value = address
+        SettingsStore.saveCarAddress(applicationContext, address)
+        AppState.appendLog(AppState.LogTag.INFO, "Remembered car $address for auto-start")
     }
 
     private fun stopEverything() {

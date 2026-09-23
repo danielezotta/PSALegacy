@@ -18,6 +18,7 @@ class SessionMachineTest {
         var errors = mutableListOf<String>()
         var connected = false
         var disconnected = false
+        val synced = mutableListOf<Pair<Int, Int>>()
 
         override fun onConnected() { connected = true }
         override fun onAuthenticated(btelType: Short, serviceStatus: Short) { authBtel = btelType }
@@ -27,6 +28,7 @@ class SessionMachineTest {
         override fun onTrip(trip: Trip) { trips.add(trip) }
         override fun onError(message: String) { errors.add(message) }
         override fun onDisconnected() { disconnected = true }
+        override fun onTripsSynced(received: Int, expected: Int) { synced.add(received to expected) }
     }
 
     private fun machine(rec: Recorder): SessionMachine {
@@ -54,8 +56,23 @@ class SessionMachineTest {
     }
 
     @Test
-    fun `activation ack echoes trip count and active state`() {
+    fun `activation request asks the head unit to keep stored trips`() {
         val rec = Recorder()
+        val m = machine(rec)
+        m.onClearMessage(authRequest(1))
+        val activation = m.buildActivation()!!
+        val flags = (activation.payload as Payload.ActivationRequestPayload).activationRequest.toInt()
+        assertEquals(ProtocolConstants.ACTIVATION_REQUEST_DEFAULT.toInt(), flags)
+        assertEquals(0, flags and ProtocolConstants.ACTIVATION_FLAG_CLEAR_TRIPS)
+        assertEquals(ProtocolConstants.ACTIVATION_FLAG_ACTIVATE, flags and ProtocolConstants.ACTIVATION_FLAG_ACTIVATE)
+        assertEquals(
+            ProtocolConstants.ACTIVATION_FLAG_POSITION_RECORDING,
+            flags and ProtocolConstants.ACTIVATION_FLAG_POSITION_RECORDING
+        )
+    }
+
+    @Test
+    fun `activation ack echoes trip count and active state`() {        val rec = Recorder()
         val m = machine(rec)
         m.onClearMessage(authRequest(1))
         val activation = m.buildActivation()!!
@@ -140,5 +157,69 @@ class SessionMachineTest {
         m.connClosed()
         assertTrue(rec.disconnected)
         assertEquals(SessionMachine.State.LISTENING, m.state)
+    }
+
+    private fun tripMessage(seq: Short): ClearMessage {
+        val payload = java.nio.ByteBuffer.allocate(113).order(java.nio.ByteOrder.BIG_ENDIAN)
+        payload.putInt(1); payload.putLong(1_500_000_000L); payload.putInt(12345)
+        payload.put(0.toByte()); payload.putInt(1); payload.putInt(2); payload.putShort(0)
+        payload.putLong(1_500_003_600L); payload.putInt(12346); payload.put(0.toByte())
+        payload.putInt(3); payload.putInt(4); payload.putShort(0); payload.putInt(0)
+        payload.putInt(0); payload.putInt(0); payload.putInt(0); payload.putShort(0)
+        payload.put(0.toByte()); payload.put(50.toByte()); payload.putShort(0)
+        payload.put(0.toByte()); payload.putShort(0); payload.putShort(0)
+        payload.put(ByteArray(32)); payload.putShort(0); payload.putShort(0)
+        return ClearMessage(ProtocolConstants.MSG_TRIP_DATA, seq, Payload.TripDataPayload(payload.array()))
+    }
+
+    private fun activatedMachine(rec: Recorder, tripCount: Short): SessionMachine {
+        val m = machine(rec)
+        m.onClearMessage(authRequest(1))
+        val activation = m.buildActivation()!!
+        m.onClearMessage(ClearMessage(ProtocolConstants.MSG_ACTIVATION_ACK, activation.sequence,
+            Payload.ActivationAckPayload(1, tripCount)))
+        return m
+    }
+
+    @Test
+    fun `all expected trips received fires onTripsSynced once`() {
+        val rec = Recorder()
+        val m = activatedMachine(rec, 3)
+        m.onClearMessage(tripMessage(1))
+        m.onClearMessage(tripMessage(2))
+        assertEquals(emptyList<Pair<Int, Int>>(), rec.synced)
+        m.onClearMessage(tripMessage(3))
+        assertEquals(listOf(3 to 3), rec.synced)
+        m.connClosed()
+        assertEquals(listOf(3 to 3), rec.synced)
+    }
+
+    @Test
+    fun `disconnect with missing trips reports partial sync`() {
+        val rec = Recorder()
+        val m = activatedMachine(rec, 3)
+        m.onClearMessage(tripMessage(1))
+        m.connClosed()
+        assertEquals(listOf(1 to 3), rec.synced)
+    }
+
+    @Test
+    fun `zero trip count never fires onTripsSynced`() {
+        val rec = Recorder()
+        val m = activatedMachine(rec, 0)
+        m.connClosed()
+        assertEquals(emptyList<Pair<Int, Int>>(), rec.synced)
+    }
+
+    @Test
+    fun `extra trips after sync do not fire onTripsSynced again`() {
+        val rec = Recorder()
+        val m = activatedMachine(rec, 2)
+        m.onClearMessage(tripMessage(1))
+        m.onClearMessage(tripMessage(2))
+        assertEquals(listOf(2 to 2), rec.synced)
+        m.onClearMessage(tripMessage(3))
+        m.connClosed()
+        assertEquals(listOf(2 to 2), rec.synced)
     }
 }

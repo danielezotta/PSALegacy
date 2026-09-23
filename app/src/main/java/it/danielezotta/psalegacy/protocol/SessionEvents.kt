@@ -9,4 +9,5 @@ interface SessionEvents {
     fun onTrip(trip: Trip)
     fun onError(message: String)
     fun onDisconnected()
+    fun onTripsSynced(received: Int, expected: Int)
 }

@@ -27,6 +27,7 @@ class ConnectionSession(
 ) {
     private companion object {
         const val MAX_FRAME_LENGTH = 0x7FFF
+        const val PRE_AUTH_GRACE_MS = 30_000L
     }
 
     @Volatile
@@ -34,6 +35,8 @@ class ConnectionSession(
 
     @Volatile
     private var output: DataOutputStream? = null
+
+    private val hadActivity = java.util.concurrent.atomic.AtomicBoolean(false)
 
     private val writeLock = Any()
 
@@ -43,6 +46,17 @@ class ConnectionSession(
             val output = DataOutputStream(socket.outputStream)
             this.output = output
             val frameCodec = FrameCodec(machine.encryption)
+            // The car sends its AuthRequest right after connecting. Devices that
+            // never speak the protocol (earphones, random connections) would
+            // otherwise hold this session open forever: cut them off once the
+            // grace period elapses so the app returns to listening.
+            val watchdog = PreAuthWatchdog(PRE_AUTH_GRACE_MS) {
+                if (!closed && !hadActivity.get()) {
+                    logger(LogTag.ERR, "No valid protocol data within ${PRE_AUTH_GRACE_MS} ms; closing connection")
+                    close()
+                }
+            }
+            watchdog.start()
             // Blocking read with no idle timeout, like the original app: the car
             // owns the connection lifecycle and may send data long after connecting
             // (e.g. the finished trip at engine stop).
@@ -55,6 +69,8 @@ class ConnectionSession(
                     logger(LogTag.ERR, "Bad frame ignored: ${e.message}")
                     continue
                 }
+                hadActivity.set(true)
+                watchdog.cancel()
                 logger(LogTag.RX, "clear (${clearBytes.size} B): ${clearBytes.toHexString()}")
                 // The clear header is [sa][len][ver][msgid][seq]: parse the fields
                 // directly so messages the codec does not know yet (unknown ids from

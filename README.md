@@ -126,6 +126,25 @@ trip decoding and the session state machine.
   no stored trips it will report zero.
 - Timestamps replicate the original app's timezone handling.
 
+## Vehicle photos
+
+The Car tab picks a vehicle image from the VIN (PSA family code at positions 4-5, model year at
+position 10): **208, 2008, 308, 3008, 5008, 508**. 3008 II and 5008 II share a VIN
+family, so they both decode as 3008; any model can be set manually in **Settings →
+Vehicle**. The displayed images are transparent, reflection-cleaned cutouts derived from
+the original photos. The originals remain in `source-images/vehicle-photos`, outside
+Android's packaged resources. All source photos come
+from Wikimedia Commons and are CC0 / public domain:
+
+| Model | Source | Author | License |
+|---|---|---|---|
+| 208 | [2016 Peugeot 208 Allure PureTech](https://commons.wikimedia.org/wiki/File:2016_Peugeot_208_Allure_PureTech_-_1200cc_1.2_(100PS)_Petrol_-_Silver_-_07-2024,_Front.jpg) | Harvey Bold | CC0 |
+| 2008 | [2018 Peugeot 2008 in Nero Black](https://commons.wikimedia.org/wiki/File:2018_Peugeot_2008_in_Nero_Black,_front_left,_06-08-2025.jpg) | Cutlass | CC0 |
+| 308 | [Peugeot 308 Mk2 Front](https://commons.wikimedia.org/wiki/File:Peugeot_308_Mk2_Front.jpg) | Luc106 | Public domain |
+| 3008 | [2018 Peugeot 3008 in Nera Black](https://commons.wikimedia.org/wiki/File:2018_Peugeot_3008_in_Nera_Black,_front_right,_06-05-2025.jpg) | Cutlass | CC0 |
+| 5008 | [Peugeot 5008 B off-white](https://commons.wikimedia.org/wiki/File:Moscow,_Peugeot_5008_B_off-white,_Mar_2026_01.jpg) | Retired electrician | CC0 |
+| 508 | [2011 Peugeot 508 Allure HDi sedan](https://commons.wikimedia.org/wiki/File:2011_Peugeot_508_Allure_HDi_sedan_(2015-07-24)_01.jpg) | OSX | Public domain |
+
 ## Disclaimer
 
 This project is **not affiliated with, endorsed by, or sponsored by Stellantis,

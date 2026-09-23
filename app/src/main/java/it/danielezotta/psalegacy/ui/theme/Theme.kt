@@ -1,81 +1,74 @@
 package it.danielezotta.psalegacy.ui.theme
 
-import android.os.Build
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 
-enum class AppTheme(val label: String) {
-    BRAND("Brand"),
-    LIGHT("Light"),
-    CLUSTER("Cluster")
+enum class AppTheme(val label: String, val caption: String) {
+    BRAND("Brand", "Graphite + Peugeot red"),
+    LIGHT("Light", "Material 3 light"),
+    CLUSTER("Cluster", "Dashboard + cyan")
 }
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-)
+fun AppTheme.colors(): PsaColors = when (this) {
+    AppTheme.BRAND -> BrandColors
+    AppTheme.LIGHT -> LightColors
+    AppTheme.CLUSTER -> ClusterColors
+}
 
-private val BrandColorScheme = darkColorScheme(
-    primary = BrandAccent,
-    onPrimary = Color.White,
-    secondary = BrandAccent,
-    tertiary = BrandAccent,
-    background = BrandBackground,
-    onBackground = BrandText,
-    surface = BrandSurface,
-    onSurface = BrandText,
-    surfaceVariant = BrandSurface,
-    onSurfaceVariant = BrandMuted,
-    outline = Color(0xFF3A404C),
-    error = Color(0xFFFF6B5E)
-)
-
-private val ClusterColorScheme = darkColorScheme(
-    primary = ClusterAccent,
-    onPrimary = Color(0xFF0A0E14),
-    secondary = ClusterAccent,
-    tertiary = ClusterWarning,
-    background = ClusterBackground,
-    onBackground = ClusterText,
-    surface = ClusterSurface,
-    onSurface = ClusterText,
-    surfaceVariant = ClusterSurface,
-    onSurfaceVariant = ClusterMuted,
-    outline = Color(0xFF1E2A3C),
-    error = Color(0xFFFF6B5E)
-)
+object PsaTheme {
+    val colors: PsaColors
+        @Composable @ReadOnlyComposable get() = LocalPsaColors.current
+}
 
 @Composable
 fun PsaLegacyTheme(
     theme: AppTheme = AppTheme.BRAND,
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when (theme) {
-        AppTheme.BRAND -> BrandColorScheme
-        AppTheme.CLUSTER -> ClusterColorScheme
-        // "Light" is a fixed theme choice (like Brand/Cluster): it must render
-        // light even when the system is in dark mode.
-        AppTheme.LIGHT -> if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            dynamicLightColorScheme(LocalContext.current)
-        } else {
-            LightColorScheme
-        }
-    }
-    val typography = when (theme) {
-        AppTheme.BRAND -> BrandTypography
-        AppTheme.CLUSTER -> ClusterTypography
-        AppTheme.LIGHT -> Typography
+    val c = theme.colors()
+    // Material components (sheets, ripples) still read the Material scheme, so
+    // mirror the design tokens into it.
+    val scheme = if (c.isLight) {
+        lightColorScheme(
+            primary = c.accentFill, onPrimary = c.onAccent,
+            secondary = c.accent, tertiary = c.warn,
+            background = c.bg, onBackground = c.text,
+            surface = c.surface, onSurface = c.text,
+            surfaceVariant = c.elevated, onSurfaceVariant = c.text2,
+            surfaceContainerLow = c.surface,
+            outline = c.line, error = c.danger, scrim = c.scrim
+        )
+    } else {
+        darkColorScheme(
+            primary = c.accentFill, onPrimary = c.onAccent,
+            secondary = c.accent, tertiary = c.warn,
+            background = c.bg, onBackground = c.text,
+            surface = c.surface, onSurface = c.text,
+            surfaceVariant = c.elevated, onSurfaceVariant = c.text2,
+            surfaceContainerLow = c.surface,
+            outline = c.line, error = c.danger, scrim = c.scrim
+        )
     }
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = typography,
-        content = content
-    )
+        colorScheme = scheme,
+        typography = Typography(bodyLarge = PsaType.body, bodyMedium = PsaType.body)
+    ) {
+        CompositionLocalProvider(
+            LocalPsaColors provides c,
+            LocalContentColor provides c.text,
+            LocalTextSelectionColors provides TextSelectionColors(
+                handleColor = c.accent,
+                backgroundColor = c.accent.copy(alpha = 0.3f)
+            ),
+            content = content
+        )
+    }
 }

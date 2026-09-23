@@ -20,6 +20,21 @@ object Format {
         if (distanceKm <= 0f || fuelL < 0f) "—"
         else "%.1f L/100km".format(Locale.US, fuelL / distanceKm * 100f)
 
+    // Unit-less variants: the UI renders units separately (muted, smaller).
+
+    fun kmValue(value: Float): String =
+        if (value < 0) "—" else groupDigits("%.1f".format(Locale.US, value))
+
+    fun litersValue(value: Float): String =
+        if (value < 0) "—" else "%.2f".format(Locale.US, value)
+
+    fun lPer100Value(distanceKm: Float, fuelL: Float): String =
+        if (distanceKm <= 0f || fuelL < 0f) "—"
+        else "%.1f".format(Locale.US, fuelL / distanceKm * 100f)
+
+    fun intValue(value: Int): String =
+        if (value < 0) "—" else groupDigits(value.toString())
+
     fun duration(ms: Long): String {
         if (ms <= 0) return "—"
         val mins = ms / 60_000
@@ -44,9 +59,15 @@ object Format {
         val dateCal = Calendar.getInstance().apply { time = date }
         val sameDay = dateCal.get(Calendar.DAY_OF_YEAR) == nowCal.get(Calendar.DAY_OF_YEAR) &&
             dateCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR)
+        val yesterdayCal = (nowCal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -1) }
+        val yesterday = dateCal.get(Calendar.DAY_OF_YEAR) == yesterdayCal.get(Calendar.DAY_OF_YEAR) &&
+            dateCal.get(Calendar.YEAR) == yesterdayCal.get(Calendar.YEAR)
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
-        return if (sameDay) "Today · $time"
-        else SimpleDateFormat("dd MMM · HH:mm", Locale.getDefault()).format(date)
+        return when {
+            sameDay -> "Today · $time"
+            yesterday -> "Yesterday · $time"
+            else -> SimpleDateFormat("dd MMM · HH:mm", Locale.getDefault()).format(date)
+        }
     }
 
     fun dateTime(epochMs: Long): String =
