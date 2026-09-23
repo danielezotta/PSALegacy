@@ -35,6 +35,26 @@ server: the car connects to it, and everything stays on the device.
 - **Raw protocol log** tab for debugging the wire traffic
 - Three themes (dark brand, light Material 3, dark cluster)
 
+## Screenshots
+
+<sub>Captured with demo data (fake VIN, sample trips) — no real vehicle data.</sub>
+
+| Connect | Trips | Trip detail |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/connect.png" width="250" alt="Connect tab"> | <img src="docs/screenshots/trips.png" width="250" alt="Trips tab"> | <img src="docs/screenshots/trip-detail.png" width="250" alt="Trip detail"> |
+| Enter the VIN, pick the UUID listeners and start the Bluetooth server | Trip history with distance/fuel totals, filters and alert badges | Mileage, addresses, GPS positions, fuel and decoded alerts per trip |
+
+| Vehicle | Log | Settings |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/vehicle.png" width="250" alt="Vehicle tab"> | <img src="docs/screenshots/log.png" width="250" alt="Log tab"> | <img src="docs/screenshots/settings.png" width="250" alt="Settings tab"> |
+| Odometer, fuel level and range, next service and active alerts | Raw SMARTAPPS V1 wire traffic, copy/share for debugging | Vehicle model, theme and auto-start options |
+
+## Download
+
+Grab the latest signed APK from the
+[**Releases**](https://github.com/danielezotta/PSALegacy/releases/latest) page and
+install it on your phone (Android 8.0+; allow installs from unknown sources).
+
 ## Compatible vehicles
 
 Developed and verified on a **Peugeot 2008** (2016) with the SMARTAPPS V1
@@ -95,6 +115,21 @@ Requirements: JDK 17+, Android SDK (platform 37).
 # debug APK
 ./gradlew :app:assembleDebug            # Windows: .\gradlew.bat ...
 ```
+
+### Signed release APK
+
+Create a `keystore.properties` file in the project root (it is gitignored):
+
+```properties
+storeFile=/path/to/psalegacy-release.jks
+storePassword=...
+keyAlias=psalegacy
+keyPassword=...
+```
+
+then run `./gradlew :app:assembleRelease`. The APK is written to
+`app/build/outputs/apk/release/app-release.apk`. Without `keystore.properties`
+the release build is produced unsigned.
 
 The protocol layer (`protocol/`) is pure Kotlin and covered by JVM unit tests:
 framing, checksums, AES key derivation (known-answer vectors), message codecs,
